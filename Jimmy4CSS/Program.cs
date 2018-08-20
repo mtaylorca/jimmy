@@ -206,8 +206,8 @@ namespace Jimmy4CSS
             
             string directoryToWatch = Path.Combine(Path.GetTempPath(), "C2IT");
 
-            CSSFileWatcher stuff = new CSSFileWatcher(directoryToWatch, outputDirectory, pathToDeviceProfiler, ignoreFilesList, cssProcess);
-            stuff.RunMainCode();
+            CSSFileWatcher fileWatcher = new CSSFileWatcher(directoryToWatch, outputDirectory, pathToDeviceProfiler, ignoreFilesList, cssProcess);
+            fileWatcher.RunMainCode();
         }
 
 
@@ -529,11 +529,17 @@ namespace Jimmy4CSS
             catch (IOException e)
             {
                 Console.WriteLine("A Exception Occurred :" + e);
+
+                Console.WriteLine("Press any key to quit.");
+                Console.ReadKey();
             }
 
             catch (Exception oe)
             {
                 Console.WriteLine("An Exception Occurred :" + oe);
+
+                Console.WriteLine("Press any key to quit.");
+                Console.ReadKey();
             }
         }
 
