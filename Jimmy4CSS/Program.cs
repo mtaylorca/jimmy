@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-//using Microsoft.Office.Interop.Excel;
 using System.Diagnostics;
 using System.IO;
 using System.Xml;
@@ -118,6 +117,13 @@ namespace Jimmy4CSS
             //Disable quick edit mode, this where clicking on the console app will pause code execution...
             DisableQuickEdit();
 
+            //Set the window name
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+            string version = fvi.FileVersion;
+
+            Console.Title = "Jimmy - v" + version;
+
             if (args.Length != 1)
             {
                 Console.WriteLine("You must pass in the full path to a .CPRJ file.");
@@ -209,7 +215,6 @@ namespace Jimmy4CSS
             CSSFileWatcher fileWatcher = new CSSFileWatcher(directoryToWatch, outputDirectory, pathToDeviceProfiler, ignoreFilesList, cssProcess);
             fileWatcher.RunMainCode();
         }
-
 
         static private bool ProgramIsRunning(string FullPath)
         {
@@ -332,135 +337,7 @@ namespace Jimmy4CSS
             this.PathToDeviceProfiler = i_PathToDeviceProfiler;
             this.IgnoreFilesList = i_IgnoreFilesList;
             this.CssProcess = i_CssProcess;
-        }
-
-        //private Application ExcelApp = new Application();
-
-            /*
-        private void FormatM4(string i_Path)
-        {
-            if (File.Exists(i_Path) == false)
-            {
-                Console.Write("File not found: " + i_Path);
-                return;
-            }
-
-            if (this.ExcelApp == null)
-            {
-                //Only create once.
-                this.ExcelApp = new Application();
-            }
-            
-            //ExcelApp.Visible = true;
-            this.ExcelApp.DisplayAlerts = false;
-
-            try
-            {
-
-                Workbook workbook = ExcelApp.Workbooks.Open(i_Path,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            XlFileFormat.xlCSV,   // Format
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            ',',          // Delimiter
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing,
-                                                            Type.Missing);
-
-                Worksheet worksheet = (Worksheet)workbook.ActiveSheet;
-
-                //Delete the index row
-                int columnCount = worksheet.UsedRange.Columns.Count;
-                int rowCount = worksheet.UsedRange.Rows.Count;
-                bool indexRowFound = false;
-
-                List<string> columnNames = new List<string>();
-
-                for (int c = 1; c < columnCount; c++)
-                {
-                    string columnName = worksheet.Cells[1, c].Value.ToString();
-
-                    if (columnName == "Index")
-                    {
-                        //Found the index column, delete it.
-                        //Console.WriteLine("Deleting Index Column");
-                        Range range = worksheet.Columns[c];
-                        range.Delete();
-                        indexRowFound = true;
-                        break;
-                    }
-                }
-
-                if (indexRowFound == false)
-                {
-                    //The index row was not found, this might be the wrong file type. Or it was already processed.                
-                    Console.Write("Error with " + Path.GetFileName(i_Path) + "...");
-
-                    workbook.Close(0);
-                    ExcelApp.Quit();
-                    return;
-                }
-
-                Range oRng = worksheet.Range["A1"];
-
-                oRng.EntireColumn.Insert(XlInsertShiftDirection.xlShiftToRight, XlInsertFormatOrigin.xlFormatFromRightOrBelow);
-
-                oRng = worksheet.Range["A1"];
-
-                oRng.Value2 = "AddressOrName";
-
-                //Console.WriteLine("Applying Formula");
-                double progressSteps = rowCount / 10;
-                int progressCounter = 0;
-                Console.Write("10...");
-
-                for (int currentRow = 2; currentRow < rowCount + 1; currentRow++)
-                {
-                    //Skip first row
-                    //Console.WriteLine(r + "/" + rowCount);
-                    if (currentRow > progressSteps * progressCounter && progressCounter < 10)
-                    {
-                        Console.Write((10 - ++progressCounter) + "...");
-                    }
-
-                    //Ex: =IF(N2="(null)",A2,N2)
-                    string formula = "=IF(N" + currentRow + "=\"(null)\",B" + currentRow + ",N" + currentRow + ")";
-
-                    worksheet.Cells[currentRow, 1].Formula = formula;
-                }
-
-                workbook.SaveAs(i_Path, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-                workbook.Close(0);
-                ExcelApp.Quit();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-
-                this.ExcelApp = null;
-
-                //Ensure excel is nuked.
-                var process = System.Diagnostics.Process.GetProcessesByName("Excel");
-                foreach (var p in process)
-                {
-                    if (!string.IsNullOrEmpty(p.ProcessName))
-                    {
-                        try
-                        {
-                            p.Kill();
-                        }
-                        catch { }
-                    }
-                }
-            }
-        }
-        */
+        }    
 
         public void RunMainCode()
         {            
@@ -602,31 +479,34 @@ namespace Jimmy4CSS
             //Process the file
             Console.WriteLine("{0}: {1} - {2} bytes - {3} ", e.ChangeType, Path.GetFileName(e.FullPath), fileLength, fileWriteTime.ToLongTimeString());
 
+            Console.Write("Copying...");
+
             while (FileIsLocked(e.FullPath, FileAccess.Read))
             {
                 //Sit here waiting!
             }
 
-            string newFilePath = Path.Combine(this.OutputDirectory, newFile.Name);
-            newFile.CopyTo(newFilePath, true);
-
-            if (newFile.Extension.ToLower() == ".cmnu")
+            try
             {
-                Console.Write("Processing...");
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.FileName = this.PathToDeviceProfiler;
-                startInfo.Arguments = "-I\"" + newFilePath + "\" -O\"" + newFilePath + ".M4.CSV\"" + " -O\"" + newFilePath + ".P4.CSV\"";
-                startInfo.CreateNoWindow = true;
-                startInfo.UseShellExecute = false;
-                Process.Start(startInfo).WaitForExit();
+                string newFilePath = Path.Combine(this.OutputDirectory, newFile.Name);
+                newFile.CopyTo(newFilePath, true);                
 
-                /*
-                //Now diddle the M4 file
-                string m4FilePath = newFilePath + ".M4.CSV";
-                FormatM4(m4FilePath);
-                */
+                if (newFile.Extension.ToLower() == ".cmnu")
+                {
+                    Console.Write("Done...Processing...");
+                    ProcessStartInfo startInfo = new ProcessStartInfo();
+                    startInfo.FileName = this.PathToDeviceProfiler;
+                    startInfo.Arguments = "-I\"" + newFilePath + "\" -O\"" + newFilePath + ".M4.CSV\"" + " -O\"" + newFilePath + ".P4.CSV\"";
+                    startInfo.CreateNoWindow = true;
+                    startInfo.UseShellExecute = false;
+                    Process.Start(startInfo).WaitForExit();
+                }
 
                 Console.WriteLine("Done.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
             }
 
             ProcessingChanges = false;
