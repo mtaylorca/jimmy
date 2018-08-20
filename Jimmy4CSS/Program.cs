@@ -402,6 +402,9 @@ namespace Jimmy4CSS
                 {
                     //Wait until processing has completed.
                 }
+
+                Console.WriteLine(this.Goodbye);
+                System.Threading.Thread.Sleep(500);
             }
             catch (IOException e)
             {
@@ -449,47 +452,58 @@ namespace Jimmy4CSS
                 return;
             }
 
-            long fileLength = newFile.Length;
-            DateTime fileWriteTime = newFile.LastWriteTime;
-            
-            if (this.LatestFiles.Keys.Contains(newFile.Name))
+            try
             {
-                //File already exists in the dictionary.
+                long fileLength = newFile.Length;
+                DateTime fileWriteTime = newFile.LastWriteTime;
 
-                FileInfo existingFile = new FileInfo(this.LatestFiles[newFile.Name]);
-
-                if (newFile.LastWriteTime > existingFile.LastWriteTime)
+                if (this.LatestFiles.Keys.Contains(newFile.Name))
                 {
-                    //Newer file.
-                    this.LatestFiles[newFile.Name] = e.FullPath;
+                    //File already exists in the dictionary.
+
+                    FileInfo existingFile = new FileInfo(this.LatestFiles[newFile.Name]);
+
+                    if (newFile.LastWriteTime > existingFile.LastWriteTime)
+                    {
+                        //Newer file.
+                        this.LatestFiles[newFile.Name] = e.FullPath;
+                    }
+                    else
+                    {
+                        //This file is old. Skip it.
+                        ProcessingChanges = false;
+                        return;
+                    }
                 }
                 else
                 {
-                    //This file is old. Skip it.
-                    ProcessingChanges = false;
-                    return;
+                    //Add a new one
+                    this.LatestFiles.Add(newFile.Name, e.FullPath);
                 }
-            }
-            else
-            {
-                //Add a new one
-                this.LatestFiles.Add(newFile.Name, e.FullPath);                
-            }
 
-            //Process the file
-            Console.WriteLine("{0}: {1} - {2} bytes - {3} ", e.ChangeType, Path.GetFileName(e.FullPath), fileLength, fileWriteTime.ToLongTimeString());
+                //Process the file
+                Console.WriteLine("{0}: {1} - {2} bytes - {3} ", e.ChangeType, Path.GetFileName(e.FullPath), fileLength, fileWriteTime.ToLongTimeString());
 
-            Console.Write("Copying...");
+                Console.Write("Copying...");
 
-            while (FileIsLocked(e.FullPath, FileAccess.Read))
-            {
-                //Sit here waiting!
-            }
+                //5 second timeout
+                int timeout = 5000;
+                int elapsedTime = 0;
 
-            try
-            {
+                while (FileIsLocked(e.FullPath, FileAccess.Read))
+                {
+                    //Sit here waiting!
+                    if (elapsedTime >= timeout)
+                    {
+                        break;
+                    }
+
+                    System.Threading.Thread.Sleep(100);
+                    elapsedTime += 100;
+                }
+
                 string newFilePath = Path.Combine(this.OutputDirectory, newFile.Name);
-                newFile.CopyTo(newFilePath, true);                
+                newFile.CopyTo(newFilePath, true);
 
                 if (newFile.Extension.ToLower() == ".cmnu")
                 {
@@ -513,7 +527,7 @@ namespace Jimmy4CSS
         }
 
         // Return true if the file is locked for the indicated access.
-        private bool FileIsLocked(string filename, FileAccess file_access)
+        private static bool FileIsLocked(string filename, FileAccess file_access)
         {
             // Try to open the file with the indicated access.
             try
@@ -553,6 +567,27 @@ namespace Jimmy4CSS
     ▐▌▀▄░░░░░░░░░░░░░░░░░▐▌  
      █  ▀░░░░░░░░░░░░░░░░▀   
                              ";
+
+        private readonly string Goodbye = @"
+              ▄▄▄▄▄▄▄▄▄▄▄▄              
+            ▄████████████████▄          
+          ▄██▀░░░░░░░▀▀████████▄        
+         ▄█▀░░░░░░░░░░░░░▀▀██████▄      
+         ███▄░░░░░░░░░░░░░░░▀██████     
+        ▄░░▀▀█░░░░░░░░░░░░░░░░██████    
+       █▄██▀▄░░░░░▄███▄▄░░░░░░███████   
+      ▄▀▀▀██▀░░░░░▄▄▄░░▀█░░░░█████████  
+     ▄▀░░░░▄▀░▄░░█▄██▀▄░░░░░██████████  
+     █░░░░▀░░░█░░░▀▀▀▀▀░░░░░██████████▄ 
+     ░░▄█▄░░░░░▄░░░░░░░░░░░░██████████▀ 
+     ░█▀░░░░▀▀░░░░░░░░░░░░░███▀███████  
+   ▄▄░▀░▄░░░░░░░░░░░░░░░░░░▀░░░██████   
+██████░░█▄█▀░▄░░██░░░░░░░░░░░█▄█████▀   
+██████░░░▀████▀░▀░░░░░░░░░░░▄▀█████████▄
+██████░░░░░░░░░░░░░░░░░░░░▀▄████████████
+██████░░▄░░░░░░░░░░░░░▄░░░██████████████
+██████░░░░░░░░░░░░░▄█▀░░▄███████████████
+███████▄▄░░░░░░░░░▀░░░▄▀▄███████████████";
 
     }
 }
