@@ -429,7 +429,7 @@ namespace Jimmy4CSS
         // Define the event handlers.
         private void OnChanged(object source, FileSystemEventArgs e)
         {
-            ProcessingChanges = true;
+            this.ProcessingChanges = true;
 
             FileInfo newFile = new FileInfo(e.FullPath);
 
@@ -441,14 +441,14 @@ namespace Jimmy4CSS
             else
             {
                 //Ignore other file types
-                ProcessingChanges = false;
+                this.ProcessingChanges = false;
                 return;
             }
 
             if (this.IgnoreFilesList.Contains(newFile.Name.ToLower()))
             {
                 //Ignore this file.
-                ProcessingChanges = false;
+                this.ProcessingChanges = false;
                 return;
             }
 
@@ -471,7 +471,7 @@ namespace Jimmy4CSS
                     else
                     {
                         //This file is old. Skip it.
-                        ProcessingChanges = false;
+                        this.ProcessingChanges = false;
                         return;
                     }
                 }
@@ -523,7 +523,7 @@ namespace Jimmy4CSS
                 Console.WriteLine(ex.ToString());
             }
 
-            ProcessingChanges = false;
+            this.ProcessingChanges = false;
         }
 
         // Return true if the file is locked for the indicated access.
