@@ -398,9 +398,10 @@ namespace Jimmy4CSS
                 }
 
                 Console.WriteLine("Shutting down.");
-                while (ProcessingChanges)
+                while (this.ProcessingChanges)
                 {
                     //Wait until processing has completed.
+                    System.Threading.Thread.Sleep(100);
                 }
 
                 Console.WriteLine(this.Goodbye);
