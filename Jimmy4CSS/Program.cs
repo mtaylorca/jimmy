@@ -17,6 +17,7 @@ namespace Jimmy4CSS
     {
         static readonly string DefaultPathToLaunchpad = @"C:\Program Files (x86)\Curtis Instruments\Integrated Toolkit\Launchpad.exe";
         static readonly string DefaultPathToDeviceProfiler = @"C:\Program Files (x86)\Curtis Instruments\Device Profiler\DeviceProfiler.exe";
+        static readonly string DefaultMaxAccessLevel = "CURTIS_DEVELOPER";
 
         static readonly List<string> DefaultIgnoreFilesList = new List<string>(new string[] { "live.cmnu", "systemfullmenu.cmnu", "factorymenu.cmnu" });
 
@@ -25,9 +26,10 @@ namespace Jimmy4CSS
         static readonly string XmlPathToLaunchpadString = "PathToLaunchpad";
         static readonly string XmlPathToDeviceProfilerString = "PathToDeviceProfiler";
         static readonly string XmlOutputDirectoryString = "OutputDirectory";
+        static readonly string XmlMaxAccessLevelString = "MaxAccessLevel";        
         static readonly string XmlIgnoreFileString = "IgnoreFile";
 
-        static private void CreateXML(string i_XmlFilePath, string i_OutputDirectory, string i_PathToLaunchpad, string i_PathToDeviceProfiler, List<string> i_IgnoreFilesList)
+        static private void CreateXML(string i_XmlFilePath, string i_OutputDirectory, string i_PathToLaunchpad, string i_PathToDeviceProfiler, string i_MaxAccessLevel, List<string> i_IgnoreFilesList)
         {
             Console.WriteLine("Creating config: " + i_XmlFilePath);
 
@@ -44,6 +46,10 @@ namespace Jimmy4CSS
 
                 writer.WriteStartElement(XmlPathToDeviceProfilerString);
                 writer.WriteString(i_PathToDeviceProfiler);
+                writer.WriteEndElement();
+
+                writer.WriteStartElement(XmlMaxAccessLevelString);
+                writer.WriteString(i_MaxAccessLevel);
                 writer.WriteEndElement();
 
                 writer.WriteStartElement(XmlOutputDirectoryString);
@@ -63,11 +69,12 @@ namespace Jimmy4CSS
             }
         }
 
-        static private bool ReadXML(string i_XmlFilePath, out string o_OutputDirectory, out string o_PathToLaunchpad, out string o_PathToDeviceProfiler, out List<string> o_IgnoreFilesList)
+        static private bool ReadXML(string i_XmlFilePath, out string o_OutputDirectory, out string o_PathToLaunchpad, out string o_PathToDeviceProfiler, out string o_MaxAccessLevel, out List<string> o_IgnoreFilesList)
         {
             o_OutputDirectory = string.Empty;
             o_PathToLaunchpad = string.Empty;
             o_PathToDeviceProfiler = string.Empty;
+            o_MaxAccessLevel = string.Empty;
             o_IgnoreFilesList = new List<string>();
 
             if (File.Exists(i_XmlFilePath) == false)
@@ -87,6 +94,9 @@ namespace Jimmy4CSS
 
                 elementName = XName.Get(XmlPathToDeviceProfilerString);
                 o_PathToDeviceProfiler = xmlMap.Elements(elementName).First().Value;
+
+                elementName = XName.Get(XmlMaxAccessLevelString);
+                o_MaxAccessLevel = xmlMap.Elements(elementName).First().Value;
 
                 elementName = XName.Get(XmlIgnoreFileString);
                 foreach (var ignoreFile in xmlMap.Elements(elementName))
@@ -139,18 +149,19 @@ namespace Jimmy4CSS
             string outputDirectory;
             string pathToLaunchpad;
             string pathToDeviceProfiler;
+            string maxAccessLevel;
             List<string> ignoreFilesList;
 
             //Look for the generic XML first
             string xmlFilePath = Path.Combine(projectDirectory, XmlGenericSettingsFilename);
 
-            bool readOK = ReadXML(xmlFilePath, out outputDirectory, out pathToLaunchpad, out pathToDeviceProfiler, out ignoreFilesList);
+            bool readOK = ReadXML(xmlFilePath, out outputDirectory, out pathToLaunchpad, out pathToDeviceProfiler, out maxAccessLevel, out ignoreFilesList);
 
             if (readOK == false)
             {
                 //Look for the project name as the XML.
                 xmlFilePath = Path.Combine(projectDirectory, fileName + ".xml");
-                readOK = ReadXML(xmlFilePath, out outputDirectory, out pathToLaunchpad, out pathToDeviceProfiler, out ignoreFilesList);
+                readOK = ReadXML(xmlFilePath, out outputDirectory, out pathToLaunchpad, out pathToDeviceProfiler, out maxAccessLevel, out ignoreFilesList);
             }
 
             if (readOK == false)
@@ -159,9 +170,10 @@ namespace Jimmy4CSS
                 outputDirectory = fileName;
                 pathToLaunchpad = DefaultPathToLaunchpad;
                 pathToDeviceProfiler = DefaultPathToDeviceProfiler;
+                maxAccessLevel = DefaultMaxAccessLevel;
                 ignoreFilesList = DefaultIgnoreFilesList;
 
-                CreateXML(xmlFilePath, outputDirectory, pathToLaunchpad, pathToDeviceProfiler, ignoreFilesList);
+                CreateXML(xmlFilePath, outputDirectory, pathToLaunchpad, pathToDeviceProfiler, maxAccessLevel, ignoreFilesList);
             }
 
             //The output directory is always in the project directory.
@@ -212,7 +224,7 @@ namespace Jimmy4CSS
             
             string directoryToWatch = Path.Combine(Path.GetTempPath(), "C2IT");
 
-            CSSFileWatcher fileWatcher = new CSSFileWatcher(directoryToWatch, outputDirectory, pathToDeviceProfiler, ignoreFilesList, cssProcess);
+            CSSFileWatcher fileWatcher = new CSSFileWatcher(directoryToWatch, outputDirectory, pathToDeviceProfiler, maxAccessLevel, ignoreFilesList, cssProcess);
             fileWatcher.RunMainCode();
         }
 
@@ -322,6 +334,7 @@ namespace Jimmy4CSS
         private readonly string DirectoryToWatch;
         private readonly string OutputDirectory;
         private readonly string PathToDeviceProfiler;
+        private readonly string MaxAccessLevel;
         private readonly List<string> IgnoreFilesList;
         private readonly Process CssProcess;
 
@@ -330,13 +343,14 @@ namespace Jimmy4CSS
         /// </summary>
         private Dictionary<string, string> LatestFiles = new Dictionary<string, string>();        
 
-        public CSSFileWatcher(string i_DirectoryToWatch, string i_OutputDirectory, string i_PathToDeviceProfiler, List<string> i_IgnoreFilesList, Process i_CssProcess)
+        public CSSFileWatcher(string i_DirectoryToWatch, string i_OutputDirectory, string i_PathToDeviceProfiler, string i_MaxAccessLevel, List<string> i_IgnoreFilesList, Process i_CssProcess)
         {
             this.DirectoryToWatch = i_DirectoryToWatch;
             this.OutputDirectory = i_OutputDirectory;
             this.PathToDeviceProfiler = i_PathToDeviceProfiler;
             this.IgnoreFilesList = i_IgnoreFilesList;
             this.CssProcess = i_CssProcess;
+            this.MaxAccessLevel = i_MaxAccessLevel;
         }    
 
         public void RunMainCode()
@@ -409,12 +423,11 @@ namespace Jimmy4CSS
             }
             catch (IOException e)
             {
-                Console.WriteLine("A Exception Occurred :" + e);
+                Console.WriteLine("An Exception Occurred :" + e);
 
                 Console.WriteLine("Press any key to quit.");
                 Console.ReadKey();
             }
-
             catch (Exception oe)
             {
                 Console.WriteLine("An Exception Occurred :" + oe);
@@ -511,7 +524,7 @@ namespace Jimmy4CSS
                     Console.Write("Done...Processing...");
                     ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.FileName = this.PathToDeviceProfiler;
-                    startInfo.Arguments = "-I\"" + newFilePath + "\" -O\"" + newFilePath + ".M4.CSV\"" + " -O\"" + newFilePath + ".P4.CSV\"";
+                    startInfo.Arguments = "-I\"" + newFilePath + "\" -O\"" + newFilePath + ".M4.CSV\"" + " -O\"" + newFilePath + ".P4.CSV\"" + " -A" + this.MaxAccessLevel;
                     startInfo.CreateNoWindow = true;
                     startInfo.UseShellExecute = false;
                     Process.Start(startInfo).WaitForExit();
