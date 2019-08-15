@@ -19,7 +19,7 @@ namespace Jimmy4CSS
         static readonly string DefaultPathToDeviceProfiler = @"C:\Program Files (x86)\Curtis Instruments\Device Profiler\DeviceProfiler.exe";
         static readonly string DefaultMaxAccessLevel = "CURTIS_DEVELOPER";
 
-        static readonly List<string> DefaultIgnoreFilesList = new List<string>(new string[] { "live.cmnu", "systemfullmenu.cmnu", "factorymenu.cmnu" });
+        static readonly List<string> DefaultIgnoreFilesList = new List<string>(new string[] { "live.cmnu", "systemfullmenu.cmnu", "factorymenu.cmnu", "factory.c13" });
 
         static readonly string XmlGenericSettingsFilename = "settings.xml";
         static readonly string XmlProjectSettingsString = "ProjectSettings";
@@ -408,10 +408,17 @@ namespace Jimmy4CSS
                         {
                             this.ForceShutdown = true;
                         }
+
+                        if (Console.ReadKey(true).Key == ConsoleKey.Enter)
+                        {
+                            ProcessLatestFiles();
+                        }
                     }
                 }
 
                 Console.WriteLine("Shutting down.");
+                ProcessLatestFiles();
+
                 while (this.ProcessingChanges)
                 {
                     //Wait until processing has completed.
@@ -443,11 +450,22 @@ namespace Jimmy4CSS
         // Define the event handlers.
         private void OnChanged(object source, FileSystemEventArgs e)
         {
+            if (this.ProcessingChanges)
+            {
+                //Operation in progress.
+                Console.WriteLine("Waiting for current operation to complete...");
+            }
+
+            while (this.ProcessingChanges)
+            {
+                //Patiently waiting.
+            }
+
             this.ProcessingChanges = true;
 
             FileInfo newFile = new FileInfo(e.FullPath);
 
-            if (newFile.Extension.ToLower() == ".cmnu" || newFile.Extension.ToLower() == ".vcl")
+            if (newFile.Extension.ToLower() == ".cmnu" || newFile.Extension.ToLower() == ".vcl" || newFile.Extension.ToLower() == ".c13")
             {
                 //Good file
                 //Console.WriteLine(newFile.Name);
@@ -519,6 +537,7 @@ namespace Jimmy4CSS
                 string newFilePath = Path.Combine(this.OutputDirectory, newFile.Name);
                 newFile.CopyTo(newFilePath, true);
 
+                /*
                 if (newFile.Extension.ToLower() == ".cmnu")
                 {
                     Console.Write("Done...Processing...");
@@ -529,8 +548,58 @@ namespace Jimmy4CSS
                     startInfo.UseShellExecute = false;
                     Process.Start(startInfo).WaitForExit();
                 }
+                */
 
                 Console.WriteLine("Done.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+            this.ProcessingChanges = false;
+        }
+
+        private void ProcessLatestFiles()
+        {
+            if (this.ProcessingChanges)
+            {
+                //Operation in progress.
+                Console.WriteLine("Waiting for current operation to complete...");
+            }
+
+            while (this.ProcessingChanges)
+            {
+                //Patiently waiting.
+            }
+
+            this.ProcessingChanges = true;
+
+            try
+            {
+                foreach (string newFilePath in this.LatestFiles.Keys)
+                {
+                    try
+                    {
+                        FileInfo newFile = new FileInfo(newFilePath);
+
+                        if (newFile.Extension.ToLower() == ".cmnu")
+                        {
+                            Console.Write("Processing: " + Path.GetFileName(newFilePath) + "...");
+                            ProcessStartInfo startInfo = new ProcessStartInfo();
+                            startInfo.FileName = this.PathToDeviceProfiler;
+                            startInfo.Arguments = "-I\"" + newFilePath + "\" -O\"" + newFilePath + ".M4.CSV\"" + " -O\"" + newFilePath + ".P4.CSV\"" + " -A" + this.MaxAccessLevel;
+                            startInfo.CreateNoWindow = true;
+                            startInfo.UseShellExecute = false;
+                            Process.Start(startInfo).WaitForExit();
+                            Console.WriteLine("Done.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
+                }
             }
             catch (Exception ex)
             {
