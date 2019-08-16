@@ -577,10 +577,11 @@ namespace Jimmy4CSS
 
             try
             {
-                foreach (string newFilePath in this.LatestFiles.Keys)
+                foreach (string fileName in this.LatestFiles.Keys)
                 {
                     try
                     {
+                        string newFilePath = Path.Combine(this.OutputDirectory, fileName);
                         FileInfo newFile = new FileInfo(newFilePath);
 
                         if (newFile.Extension.ToLower() == ".cmnu")
