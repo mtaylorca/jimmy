@@ -465,7 +465,7 @@ namespace Jimmy4CSS
 
             FileInfo newFile = new FileInfo(e.FullPath);
 
-            if (newFile.Extension.ToLower() == ".cmnu" || newFile.Extension.ToLower() == ".vcl" || newFile.Extension.ToLower() == ".c13")
+            if (newFile.Extension.ToLower() == ".cmnu" || newFile.Extension.ToLower() == ".vcl" || newFile.Extension.ToLower() == ".c13" || newFile.Extension.ToLower() == ".cpkg" || newFile.Extension.ToLower() == ".bin")
             {
                 //Good file
                 //Console.WriteLine(newFile.Name);
